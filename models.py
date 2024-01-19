@@ -11,8 +11,9 @@ class Restaurant(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     price = Column(Integer)
-    reviews = relationship('Review', back_populates='restaurant')
-    customers = relationship('Customer', secondary='reviews')
+
+    customers = relationship('Customer', secondary='reviews', back_populates='restaurants', overlaps='reviews')
+    reviews = relationship('Review', back_populates='restaurant', overlaps='customers,restaurants')
 
     @classmethod
     def fanciest(cls):
@@ -29,8 +30,9 @@ class Customer(Base):
     id = Column(Integer, primary_key=True)
     first_name = Column(String)
     last_name = Column(String)
-    reviews = relationship('Review', back_populates='customer')
-    restaurants = relationship('Restaurant', secondary='reviews')
+
+    reviews = relationship('Review', back_populates='customer', overlaps='customers,restaurants')
+    restaurants = relationship('Restaurant', secondary='reviews', back_populates='customers', overlaps='reviews')
 
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -55,17 +57,12 @@ class Customer(Base):
 class Review(Base):
     __tablename__ = 'reviews'
     id = Column(Integer, primary_key=True)
-    star_rating = Column(Integer)
-    restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
-    customer_id = Column(Integer, ForeignKey('customers.id'))
-    restaurant = relationship('Restaurant', back_populates='reviews')
-    customer = relationship('Customer', back_populates='reviews')
+    star_rating = Column(Integer, nullable=True)
+    restaurant_id = Column(Integer, ForeignKey('restaurants.id'), nullable=True)
+    customer_id = Column(Integer, ForeignKey('customers.id'), nullable=True)
 
-    def customer(self):
-        return self.customer
-
-    def restaurant(self):
-        return self.restaurant
+    restaurant = relationship('Restaurant', back_populates='reviews', overlaps='customers,restaurants')
+    customer = relationship('Customer', back_populates='reviews', overlaps='customers,restaurants')
 
     def full_review(self):
         return f"Review for {self.restaurant.name} by {self.customer.full_name()}: {self.star_rating} stars"
